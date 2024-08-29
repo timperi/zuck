@@ -1,0 +1,26 @@
+{
+  "manifest_version": 2,
+  "name": "FB-Force-All-Comments",
+  "version": "1.0",
+  "description": "Force All Comments for Facebook",
+  "homepage_url": "https://github.com/timperi",
+  "icons": {
+    "48": "icons/zuck-48.png"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "*://www.facebook.com/*",
+        "*://facebook.com/*"
+      ],
+      "js": ["sukkerperi.js"]
+    }
+  ],
+
+  "permissions": [
+    "*://www.facebook.com/*",
+    "*://facebook.com/*"
+  ]
+
+}
