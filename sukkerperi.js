@@ -1,17 +1,17 @@
-function simulateClick(node) {
-  var alreadyClicked = node.getAttribute('sukkerperi-has-clicked');
-  if(alreadyClicked == "true") {
-    return true;
-  }
-  node.setAttribute('sukkerperi-has-clicked', "true");
+const version = "1.3";
 
+function dispatchClick(node, role) {
   const event = new MouseEvent("click", {
     view: window,
     bubbles: true,
     cancelable: true,
   });
-  console.log("simulateClick: clicking " + node.nodeName + " text: " + node.textContent);
-  return node.dispatchEvent(event);
+  if(node.dispatchEvent(event)) {
+    console.log("dispatchClick " + version + ": clicked " + node.nodeName + " text: " + node.textContent + " role: " + role);
+    return true;
+  }
+  console.log("dispatchClick " + version + ": " + node.nodeName + " text: " + node.textContent + " role: " + role + " cancelled");
+  return false;
 }
 
 function matchTrigger(triggerTexts, mutationList) {
@@ -32,22 +32,23 @@ function matchTrigger(triggerTexts, mutationList) {
   return matchedNodes;
 }
 
-function checkElementAndClickIfMatch(match, checkDepth, desiredRole) {
+function checkElement(match, checkDepth, desiredRole) {
   var xpath = "//span[text()='"+match.text+"']";
   var node = document.evaluate(xpath, match.node, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
   if(node) {
     while(node && checkDepth) {
       if(node.getAttribute('role') == desiredRole) {
-        simulateClick(node);
-        return;
+        return {node: node, role: desiredRole, text: match.text, match: true };
       }
       node = node.parentNode;
       checkDepth--;
     }
   }
+  return {match: false};
 }
 
-function enableObserver(observer, enable) {
+
+function setObserverEnabled(observer, enable) {
   if(enable) {
     observer.observe(document, { childList: true, subtree: true });
   } else {
@@ -57,23 +58,39 @@ function enableObserver(observer, enable) {
 
 // Ordering Button observer
 const orderingButtonCallback = (mutationList, observer) => {
-  const triggerTexts = ['Top comments','Newest','All comments'];
+  const triggerTexts = ['Most relevant','Top comments','Newest'];
   var matches = matchTrigger(triggerTexts, mutationList);
   for(const match of matches) {
-    checkElementAndClickIfMatch(match, 2, "button");
+    var check = checkElement(match, 2, "button");
+    if(check.match) {
+      // found an ordering button and it is not set to 'All comments'
+      // enable ordering selector observer and click ordering button
+      setObserverEnabled(orderingSelectorObserver, true);
+      if(!dispatchClick(check.node, check.role)) {
+        setObserverEnabled(orderingSelectorObserver, false);
+      }
+      return;
+    }
   }
 };
-const orderingButtonObserver = new MutationObserver(orderingButtonCallback);
 
 // Ordering Selector observer
 const orderingSelectorCallback = (mutationList, observer) => {
   const triggerTexts = ['All comments'];
   var matches = matchTrigger(triggerTexts, mutationList);
   for(const match of matches) {
-    checkElementAndClickIfMatch(match, 6, "menuitem");
+    var check = checkElement(match, 6, "menuitem");
+    if(check.match) {
+      // found an ordering selector item called 'All comments'
+      // disable ordering selector observer and click 'All comments'
+      setObserverEnabled(orderingSelectorObserver, false);
+      dispatchClick(check.node, check.role);
+      return;
+    }
   }
 };
+
+const orderingButtonObserver = new MutationObserver(orderingButtonCallback);
 const orderingSelectorObserver = new MutationObserver(orderingSelectorCallback);
 
-enableObserver(orderingButtonObserver, true);
-enableObserver(orderingSelectorObserver, true);
+setObserverEnabled(orderingButtonObserver, true);
