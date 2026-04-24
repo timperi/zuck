@@ -18,6 +18,15 @@
     }
   ],
 
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{4102ebb5-ee9d-4e57-a5d9-8decb4f73dab}",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+
   "permissions": [
     "*://www.facebook.com/*",
     "*://facebook.com/*"
